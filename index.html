@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1d3f8f">
+<title>Turni NCC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: foglio di servizio. In alto la giornata come planning orario (una riga per autista), sotto i servizi da assegnare. */
+:root{
+  --bg:#eceff3; --surface:#ffffff; --sunk:#f4f6f9; --ink:#131c2b; --muted:#5a6575; --line:#d3d9e2;
+  --accent:#1d3f8f; --on-accent:#ffffff; --accent-soft:#e3eaf8; --band:#14244a; --on-band:#ffffff; --band-muted:#a9b8da;
+  --ok:#17794f; --ok-soft:#d9f0e4; --warn:#9a5b00; --warn-soft:#fbe9c6; --bad:#ad2f27; --bad-soft:#f8dfdc;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){ :root{
+  --bg:#0e131b; --surface:#171e29; --sunk:#121821; --ink:#e7ecf3; --muted:#96a2b3; --line:#2a3443;
+  --accent:#8fb0ff; --on-accent:#0e131b; --accent-soft:#1c2a47; --band:#101a33; --on-band:#e7ecf3; --band-muted:#8b9bbf;
+  --ok:#55c995; --ok-soft:#143326; --warn:#f0b24e; --warn-soft:#3a2b0e; --bad:#f27d73; --bad-soft:#3c1b18; color-scheme:dark } }
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--body);-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+h1{font-size:24px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:18px;font-weight:700}
+h3{font-size:16px;font-weight:500}
+p{margin:0}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* barra superiore */
+.band{background:var(--band);color:var(--on-band);padding-top:env(safe-area-inset-top,0px)}
+.band-in{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:14px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.brand svg{flex:none}
+.brand small{display:block;color:var(--band-muted);font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:600}
+.who{display:flex;align-items:center;gap:10px;font-size:14px}
+.who b{font-weight:600}
+.band .btn{background:transparent;color:var(--on-band);border-color:var(--band-muted)}
+.tabs{max-width:1080px;margin:0 auto;padding-inline:16px;display:flex;gap:4px;overflow-x:auto}
+.tabs button{border:0;background:transparent;color:var(--band-muted);font:600 14px var(--body);padding:10px 14px 12px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--on-band);border-bottom-color:var(--on-band)}
+
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 56px;display:flex;flex-direction:column;gap:20px}
+section.view{display:flex;flex-direction:column;gap:16px}
+
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px;font-weight:500;cursor:pointer;min-height:38px}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.55;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.btn.small{padding:5px 9px;font-size:13px;min-height:32px}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--bad)}
+.btn.pick{border-color:var(--ok);background:var(--ok-soft);text-align:left}
+.btn.pick b{font-weight:600}
+input,select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0;width:100%;min-height:40px}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:500;color:var(--muted);min-width:0}
+label>*{color:var(--ink);font-weight:400;font-size:16px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.cols{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:820px){.cols{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:460px){.grid3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.notice{border-radius:10px;padding:10px 14px;background:var(--warn-soft);color:var(--ink);border:1px solid var(--line);font-size:14px}
+.notice.ok{background:var(--ok-soft)}
+.pending{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* giornata */
+.daybar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.daybar input{width:auto}
+.daybar .title{font-family:var(--display);font-weight:700;font-size:22px;margin-right:auto;text-transform:capitalize}
+.stats{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px;color:var(--muted)}
+.stats b{font:600 20px var(--display);color:var(--ink);margin-right:5px}
+.stats .warn b{color:var(--warn)}
+
+/* planning */
+.tl-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.tl{min-width:680px;display:flex;flex-direction:column}
+.tl-row{display:grid;grid-template-columns:150px minmax(0,1fr);border-top:1px solid var(--line)}
+.tl-row:first-child{border-top:0}
+.tl-name{padding:8px 12px;font-weight:600;font-size:14px;display:flex;flex-direction:column;justify-content:center;min-width:0;border-right:1px solid var(--line)}
+.tl-name small{font-weight:400;color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+.tl-track{position:relative;min-height:40px;background-image:linear-gradient(to right,var(--line) 1px,transparent 1px);background-size:12.5% 100%}
+.tl-axis .tl-track{min-height:26px;background:none}
+.tl-axis span{position:absolute;top:5px;font:12px var(--mono);color:var(--muted);transform:translateX(-50%)}
+.tl-axis span:first-child{transform:none}
+.tl-axis span:last-child{transform:translateX(-100%)}
+.tl-av{position:absolute;top:0;bottom:0;background:var(--ok-soft);border-inline:2px solid var(--ok)}
+.tl-sv{position:absolute;height:26px;min-width:46px;border:0;border-radius:5px;background:var(--accent);color:var(--on-accent);font:500 12px var(--body);padding:0 6px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.tl-sv.open{background:var(--warn-soft);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--warn)}
+.tl-sv.off{box-shadow:inset 0 0 0 2px var(--bad)}
+.tl-now{position:absolute;top:0;bottom:0;width:2px;background:var(--bad);z-index:1}
+.tl-open .tl-name{color:var(--warn)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+/* servizi */
+.list{display:flex;flex-direction:column;gap:12px}
+.srv{display:grid;grid-template-columns:108px minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;scroll-margin-top:16px}
+.srv.flash{outline:2px solid var(--accent)}
+.srv-time{padding:14px 12px;background:var(--sunk);border-right:1px solid var(--line);font:500 17px var(--mono);font-variant-numeric:tabular-nums;display:flex;flex-direction:column;gap:2px}
+.srv-time small{font-size:12px;color:var(--muted)}
+.srv-body{padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.srv-body h3{overflow-wrap:anywhere}
+.meta{font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:13px;font-weight:600}
+.pill.open{background:var(--warn-soft);color:var(--warn)}
+.pill.done{background:var(--accent-soft);color:var(--accent)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.cands{display:flex;flex-wrap:wrap;gap:8px}
+details.others{font-size:14px}
+details.others summary{cursor:pointer;color:var(--muted)}
+.others ul{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.others li{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--sunk);border-radius:8px}
+@media (max-width:520px){.srv{grid-template-columns:minmax(0,1fr)}.srv-time{flex-direction:row;align-items:baseline;gap:10px;border-right:0;border-bottom:1px solid var(--line);padding:10px 14px}}
+.empty{border:1.5px dashed var(--line);border-radius:12px;padding:22px 18px;color:var(--muted)}
+.empty b{color:var(--ink)}
+
+/* disponibilità */
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.week button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.week button .d{font:700 18px var(--display)}
+.week button .w{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.week button .s{font:11px var(--mono);color:var(--ok);min-height:14px;text-align:center}
+.week button.has{border-color:var(--ok);background:var(--ok-soft)}
+.week button.today .d{color:var(--accent)}
+.week button[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:1px}
+.slot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:var(--ok-soft);border-radius:8px;font:500 17px var(--mono)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.fl{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line)}
+.fl:first-child{border-top:0;padding-top:0}
+.fl div{min-width:0;overflow-wrap:anywhere}
+
+/* accesso */
+.login{min-height:100%;display:flex;flex-direction:column}
+.login .band-in{justify-content:center}
+.login-card{max-width:400px;width:100%;margin:40px auto;padding-inline:16px}
+.login-card .panel{padding:22px}
+.pinbig{font:500 24px var(--mono);letter-spacing:.3em;text-align:center}
+
+#toast{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));margin:auto;max-width:460px;background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:10px;font-size:14px;z-index:5}
+.loading{padding:60px 16px;text-align:center;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CONFIGURAZIONE FIREBASE
+     Sostituisci il blocco qui sotto con quello copiato dalla console
+     Firebase (Impostazioni progetto > Le tue app > Configurazione).
+     Finché resta "INCOLLA-QUI" la pagina funziona in modalità prova,
+     con dati di esempio che non vengono salvati.
+     ============================================================ -->
+<script>
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAR2nG9ycqMVKtrzp5daLEgDKLY4vtUnNQ",
+  authDomain: "turni-ncc.firebaseapp.com",
+  projectId: "turni-ncc",
+  storageBucket: "turni-ncc.firebasestorage.app",
+  messagingSenderId: "974126423136",
+  appId: "1:974126423136:web:199fbe39fb44c7768d7705"
+};
+</script>
+
+<div id="boot" class="loading">Caricamento…</div>
+
+<!-- ACCESSO -->
+<div id="v-login" class="login" hidden>
+  <div class="band"><div class="band-in">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="8" fill="currentColor" opacity=".14"/><path d="M8 21.5h18M9.5 21.5l2.2-6.2c.3-.8 1-1.3 1.9-1.3h6.8c.9 0 1.6.5 1.9 1.3l2.2 6.2M10 21.5v3h3v-3M21 21.5v3h3v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><small>Noleggio con conducente</small><h1>Turni NCC</h1></div>
+    </div>
+  </div></div>
+  <div class="login-card">
+    <form class="panel" id="f-login">
+      <h2>Accedi</h2>
+      <label>Chi sei?<select id="lg-chi" required></select></label>
+      <label>PIN<input type="password" id="lg-pin" autocomplete="current-password" required></label>
+      <button class="btn primary" type="submit" id="lg-go">Entra</button>
+      <p class="muted" style="font-size:13px">Il PIN te lo dà l’organizzatore. Su questo dispositivo resti collegato finché non premi Esci.</p>
+    </form>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="v-app" hidden>
+  <div class="band">
+    <div class="band-in">
+      <div class="brand">
+        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="8" fill="currentColor" opacity=".14"/><path d="M8 21.5h18M9.5 21.5l2.2-6.2c.3-.8 1-1.3 1.9-1.3h6.8c.9 0 1.6.5 1.9 1.3l2.2 6.2M10 21.5v3h3v-3M21 21.5v3h3v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div><small>Noleggio con conducente</small><h1>Turni NCC</h1></div>
+      </div>
+      <div class="who"><span id="who"></span><button class="btn small" data-act="logout">Esci</button></div>
+    </div>
+    <nav class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-tab="plan" aria-selected="true">Planning</button>
+      <button role="tab" data-tab="disp" aria-selected="false">Disponibilità</button>
+      <button role="tab" data-tab="flotta" aria-selected="false">Flotta</button>
+    </nav>
+  </div>
+
+  <main class="wrap">
+    <div class="notice" id="demo" hidden><b>Modalità prova.</b> I dati sono di esempio e spariscono alla chiusura. Inserisci la configurazione Firebase nel file per usarla davvero.</div>
+
+    <!-- PLANNING (organizzatore) -->
+    <section class="view" id="v-plan">
+      <div class="pending" id="pending" hidden></div>
+      <div class="daybar">
+        <span class="title" id="org-title"></span>
+        <button class="btn" data-act="org-day" data-n="-1" aria-label="Giorno precedente">←</button>
+        <input type="date" id="org-date" aria-label="Giorno">
+        <button class="btn" data-act="org-day" data-n="1" aria-label="Giorno successivo">→</button>
+        <button class="btn" data-act="org-today">Oggi</button>
+      </div>
+      <div class="stats" id="stats"></div>
+      <div class="tl-scroll"><div class="tl" id="tl"></div></div>
+      <div class="legend">
+        <span><i style="background:var(--ok-soft);border-inline:2px solid var(--ok)"></i>Disponibile</span>
+        <span><i style="background:var(--accent)"></i>Servizio assegnato</span>
+        <span><i style="background:var(--warn-soft);box-shadow:inset 0 0 0 1.5px var(--warn)"></i>Da assegnare</span>
+        <span><i style="background:var(--accent);box-shadow:inset 0 0 0 2px var(--bad)"></i>Fuori disponibilità</span>
+      </div>
+      <div class="cols">
+        <form class="panel" id="f-srv">
+          <h2 id="f-srv-title">Nuovo servizio</h2>
+          <input type="hidden" id="srv-id">
+          <div class="grid3">
+            <label>Giorno<input type="date" id="srv-data" required></label>
+            <label>Ora<input type="time" id="srv-ora" required value="09:00"></label>
+            <label>Durata<select id="srv-durata">
+              <option value="30">30 min</option><option value="60" selected>1 ora</option><option value="90">1 h 30</option>
+              <option value="120">2 ore</option><option value="180">3 ore</option><option value="240">4 ore</option>
+              <option value="300">5 ore</option><option value="360">6 ore</option><option value="480">8 ore</option>
+              <option value="600">10 ore</option><option value="720">12 ore</option></select></label>
+          </div>
+          <label>Partenza<input id="srv-da" required placeholder="Aeroporto Marconi"></label>
+          <label>Destinazione<input id="srv-a" required placeholder="Hotel in centro"></label>
+          <div class="grid2">
+            <label>Cliente<input id="srv-cliente" placeholder="Nome o azienda"></label>
+            <label>Passeggeri<input type="number" id="srv-pax" min="1" max="60" value="2"></label>
+          </div>
+          <label>Note<textarea id="srv-note" rows="2" placeholder="Volo, bagagli, seggiolino…"></textarea></label>
+          <div class="row">
+            <button class="btn primary" type="submit" id="srv-save">Aggiungi servizio</button>
+            <button class="btn ghost" type="button" data-act="srv-reset" id="srv-cancel" hidden>Annulla</button>
+          </div>
+        </form>
+        <div class="list" id="servizi"></div>
+      </div>
+    </section>
+
+    <!-- DISPONIBILITÀ -->
+    <section class="view" id="v-disp" hidden>
+      <div class="panel" id="io-box">
+        <label>Disponibilità di<select id="io"></select></label>
+        <p class="muted" id="io-hint" hidden>Non ci sono ancora autisti. Aggiungili nella scheda <b>Flotta</b>.</p>
+      </div>
+      <div id="aut-body" style="display:flex;flex-direction:column;gap:16px">
+        <div class="panel">
+          <div class="row" style="justify-content:space-between">
+            <h2>Quando sei disponibile</h2>
+            <div class="row">
+              <button class="btn small" data-act="week" data-n="-7" aria-label="Settimana precedente">←</button>
+              <button class="btn small" data-act="week" data-n="7" aria-label="Settimana successiva">→</button>
+            </div>
+          </div>
+          <div class="week" id="week"></div>
+          <h3 id="aut-day" style="text-transform:capitalize"></h3>
+          <div class="list" id="fasce" style="gap:8px"></div>
+          <div>
+            <p class="eyebrow" style="margin-bottom:8px">Aggiungi con un tocco</p>
+            <div class="chips">
+              <button class="btn" data-act="preset" data-da="360" data-a="780">Mattina 06–13</button>
+              <button class="btn" data-act="preset" data-da="780" data-a="1200">Pomeriggio 13–20</button>
+              <button class="btn" data-act="preset" data-da="1200" data-a="1440">Sera 20–24</button>
+              <button class="btn" data-act="preset" data-da="0" data-a="1440">Tutto il giorno</button>
+            </div>
+          </div>
+          <form class="row" id="f-fascia" style="align-items:flex-end">
+            <label style="flex:1 1 100px">Dalle<input type="time" id="fa-da" value="08:00" required></label>
+            <label style="flex:1 1 100px">Alle<input type="time" id="fa-a" value="18:00" required></label>
+            <button class="btn primary" type="submit">Aggiungi orario</button>
+          </form>
+          <div class="row">
+            <button class="btn small" data-act="copy-week">Copia questi orari sugli altri giorni della settimana</button>
+          </div>
+        </div>
+        <div class="panel">
+          <h2 id="miei-title">I tuoi prossimi servizi</h2>
+          <div class="list" id="miei"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FLOTTA (organizzatore) -->
+    <section class="view" id="v-flotta" hidden>
+      <div class="notice ok" id="pin-note" hidden></div>
+      <div class="cols">
+        <form class="panel" id="f-aut">
+          <h2>Aggiungi autista</h2>
+          <label>Nome<input id="au-nome" required placeholder="Nome e cognome"></label>
+          <label>Veicolo<input id="au-veicolo" placeholder="Mercedes Classe V"></label>
+          <div class="grid2">
+            <label>Posti passeggeri<input type="number" id="au-posti" min="1" max="60" value="4"></label>
+            <label>Telefono<input id="au-tel" inputmode="tel" placeholder="333 1234567"></label>
+          </div>
+          <label>PIN di accesso<input id="au-pin" inputmode="numeric" pattern="[0-9]{6,8}" required title="Da 6 a 8 cifre"></label>
+          <button class="btn primary" type="submit">Aggiungi alla flotta</button>
+        </form>
+        <div class="panel"><h2>Flotta</h2><div id="flotta"></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div id="toast" hidden role="status"></div>
+
+<script type="module">
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const addD=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return iso(d)};
+const dayN=s=>{const[y,m,d]=s.split('-').map(Number);return Math.round(Date.UTC(y,m-1,d)/864e5)};
+const hm=m=>m===1440?'24:00':`${pad(Math.floor(m/60)%24)}:${pad(m%60)}`;
+const toMin=t=>{const[h,m]=t.split(':').map(Number);return h*60+m};
+const longDay=s=>parse(s).toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
+const shortDay=s=>parse(s).toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'});
+const dur=m=>m<60?m+' min':(m%60?`${Math.floor(m/60)} h ${m%60}`:(m/60)+(m===60?' ora':' ore'));
+const TODAY=iso(new Date());
+const monday=s=>{const d=parse(s);const w=(d.getDay()+6)%7;return addD(s,-w)};
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const rndPin=()=>String(Math.floor(100000+Math.random()*900000));
+const newId=()=>'a'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+const S={autisti:new Map(),disp:new Map(),servizi:new Map()};
+let sess=null, api=null, giorno=TODAY, gAut=TODAY, weekStart=monday(TODAY), io='', tab='plan';
+const isAdmin=()=>sess&&sess.ruolo==='admin';
+
+let tt;function toast(m,ms=5000){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,ms)}
+function fail(e){
+  const c=e&&e.code||'';
+  toast(c.includes('permission')?'Operazione non permessa con il tuo accesso.':
+        c.includes('unavailable')?'Sei offline: riprova quando torna la connessione.':'Salvataggio non riuscito. Riprova.');
+}
+async function put(col,id,data){try{await api.put(col,id,data);return true}catch(e){fail(e);return false}}
+async function del(col,id){try{await api.del(col,id);return true}catch(e){fail(e);return false}}
+
+/* ---------- logica disponibilità ---------- */
+const fasceDi=(aid,data)=>(S.disp.get(aid+'_'+data)?.fasce||[]);
+function merge(list){
+  const a=[...list].sort((x,y)=>x.da-y.da),o=[];
+  for(const f of a){const l=o[o.length-1];if(l&&f.da<=l.a)l.a=Math.max(l.a,f.a);else o.push({da:f.da,a:f.a})}
+  return o;
+}
+const span=s=>{const st=dayN(s.data)*1440+s.inizio;return[st,st+s.durata]};
+function coperto(aid,s){
+  const[st,en]=span(s),abs=[];
+  for(const d of [s.data,addD(s.data,1)]){const b=dayN(d)*1440;for(const f of fasceDi(aid,d))abs.push({da:b+f.da,a:b+f.a})}
+  return merge(abs).some(f=>f.da<=st&&f.a>=en);
+}
+function conflitto(aid,s){
+  const[st,en]=span(s);
+  for(const[id,o]of S.servizi){if(id===s.id||o.autistaId!==aid)continue;const[a,b]=span(o);if(a<en&&b>st)return o}
+  return null;
+}
+const fine=s=>{const e=s.inizio+s.durata;return e>1440?hm(e%1440)+' +1':hm(e)};
+function stato(aid,s){
+  const c=conflitto(aid,s);
+  if(c)return{k:'occupato',why:`Già impegnato ${hm(c.inizio)}–${fine(c)} (${c.a})`};
+  if(!coperto(aid,s)){const f=fasceDi(aid,s.data);return{k:'fuori',why:f.length?'Disponibile solo '+f.map(x=>hm(x.da)+'–'+hm(x.a)).join(', '):'Nessuna disponibilità inserita'}}
+  return{k:'libero'};
+}
+const servizi=()=>[...S.servizi].map(([id,s])=>({...s,id}));
+const serviziDi=d=>servizi().filter(s=>s.data===d).sort((a,b)=>a.inizio-b.inizio);
+const autisti=()=>[...S.autisti].map(([id,a])=>({...a,id})).sort((a,b)=>a.nome.localeCompare(b.nome,'it'));
+const assegnato=s=>s.autistaId&&S.autisti.has(s.autistaId)?S.autisti.get(s.autistaId):null;
+
+/* ---------- planning ---------- */
+function lanes(items){
+  const ends=[];for(const s of items){let i=ends.findIndex(e=>e<=s.inizio);if(i<0){i=ends.length;ends.push(0)}ends[i]=s.inizio+s.durata;s.lane=i}
+  return Math.max(1,ends.length);
+}
+function blocks(items,cls){
+  const n=lanes(items);
+  const h=items.map(s=>{const l=s.inizio/14.4,w=Math.max(1.2,Math.min(s.inizio+s.durata,1440)/14.4-l);
+    return `<button class="tl-sv ${cls(s)}" data-act="focus" data-id="${s.id}" style="left:${l}%;width:${w}%;top:${7+s.lane*30}px" title="${esc(hm(s.inizio)+'–'+fine(s)+' · '+s.da+' → '+s.a)}">${hm(s.inizio)} ${esc(s.a)}</button>`}).join('');
+  return{h,height:14+n*30-4};
+}
+function renderPlan(){
+  $('#org-title').textContent=longDay(giorno);
+  if($('#org-date').value!==giorno)$('#org-date').value=giorno;
+  const sv=serviziDi(giorno),au=autisti();
+  const open=sv.filter(s=>!assegnato(s));
+  const disp=au.filter(a=>fasceDi(a.id,giorno).length).length;
+  $('#stats').innerHTML=`<span><b>${sv.length}</b>${sv.length===1?'servizio':'servizi'}</span><span class="${open.length?'warn':''}"><b>${open.length}</b>da assegnare</span><span><b>${disp}</b>di ${au.length} autisti disponibili</span>`;
+  const byDay={};for(const s of servizi())if(!assegnato(s)&&s.data>=TODAY)byDay[s.data]=(byDay[s.data]||0)+1;
+  const days=Object.keys(byDay).sort().filter(d=>d!==giorno),p=$('#pending');
+  p.hidden=!days.length;
+  p.innerHTML=days.length?`<span class="pill open">Da assegnare anche</span>`+days.slice(0,8).map(d=>`<button class="btn small" data-act="goto" data-d="${d}">${esc(shortDay(d))} · ${byDay[d]}</button>`).join(''):'';
+  let h=`<div class="tl-row tl-axis"><div class="tl-name"></div><div class="tl-track">${[0,3,6,9,12,15,18,21,24].map(x=>`<span style="left:${x/24*100}%">${pad(x)}</span>`).join('')}</div></div>`;
+  const now=giorno===TODAY?(()=>{const d=new Date();return`<div class="tl-now" style="left:${(d.getHours()*60+d.getMinutes())/14.4}%"></div>`})():'';
+  if(open.length){const b=blocks(open,()=>'open');h+=`<div class="tl-row tl-open"><div class="tl-name">Da assegnare<small>${open.length} ${open.length===1?'servizio':'servizi'}</small></div><div class="tl-track" style="min-height:${b.height}px">${now}${b.h}</div></div>`}
+  for(const a of au){
+    const mine=sv.filter(s=>s.autistaId===a.id);
+    const b=blocks(mine,s=>coperto(a.id,s)?'':'off');
+    const av=fasceDi(a.id,giorno).map(f=>`<div class="tl-av" style="left:${f.da/14.4}%;width:${(f.a-f.da)/14.4}%"></div>`).join('');
+    h+=`<div class="tl-row"><div class="tl-name">${esc(a.nome)}<small>${esc([a.veicolo,a.posti?a.posti+' posti':''].filter(Boolean).join(' · '))}</small></div><div class="tl-track" style="min-height:${b.height}px">${av}${now}${b.h}</div></div>`;
+  }
+  if(!au.length)h+=`<div class="tl-row"><div class="tl-name muted">Nessun autista</div><div class="tl-track" style="padding:10px 12px"><span class="muted">Aggiungi gli autisti nella scheda Flotta: qui vedrai le loro disponibilità ora per ora.</span></div></div>`;
+  $('#tl').innerHTML=h;
+  $('#servizi').innerHTML=sv.length?sv.map(s=>card(s,au)).join(''):
+    `<div class="empty"><b>Nessun servizio per ${esc(longDay(giorno))}.</b><br>Inseriscilo dal modulo: sotto ogni servizio compaiono subito gli autisti liberi in quell’orario, pronti da assegnare.</div>`;
+}
+function card(s,au){
+  const a=assegnato(s);
+  const info=[s.cliente,(s.pax||1)+' pax',dur(s.durata),s.note].filter(Boolean).map(esc).join(' · ');
+  let body;
+  if(a){
+    const st=stato(s.autistaId,s);
+    body=`<div class="row"><span class="pill done">Assegnato a ${esc(a.nome)}</span>${a.tel?`<span class="mono muted">${esc(a.tel)}</span>`:''}</div>`+
+      (st.k!=='libero'?`<div class="row"><span class="pill bad">Attenzione</span><span class="meta">${esc(st.why)}</span></div>`:'')+
+      (a.posti&&s.pax>a.posti?`<div class="row"><span class="pill bad">Posti</span><span class="meta">${s.pax} passeggeri, veicolo da ${a.posti}</span></div>`:'');
+  }else{
+    const liberi=[],altri=[];
+    for(const x of au){const st=stato(x.id,s);(st.k==='libero'?liberi:altri).push({x,st})}
+    body=`<div class="row"><span class="pill open">Da assegnare</span><span class="meta">${liberi.length?`${liberi.length} ${liberi.length===1?'autista libero':'autisti liberi'}`:'Nessun autista libero in questo orario'}</span></div>`+
+      (liberi.length?`<div class="cands">${liberi.map(({x})=>`<button class="btn pick" data-act="assegna" data-id="${s.id}" data-aid="${x.id}"><b>${esc(x.nome)}</b>${x.veicolo?' · '+esc(x.veicolo):''}${x.posti?` · ${x.posti} posti${s.pax>x.posti?' (pochi)':''}`:''}</button>`).join('')}</div>`:'')+
+      (altri.length?`<details class="others"><summary>${altri.length} non ${altri.length===1?'disponibile':'disponibili'}</summary><ul>${altri.map(({x,st})=>`<li><span><b>${esc(x.nome)}</b> <span class="muted">${esc(st.why)}</span></span><button class="btn small" data-act="assegna" data-id="${s.id}" data-aid="${x.id}">Assegna comunque</button></li>`).join('')}</ul></details>`:'');
+  }
+  return `<article class="srv" id="s-${s.id}"><div class="srv-time"><span>${hm(s.inizio)}</span><small>fino ${fine(s)}</small></div>
+    <div class="srv-body"><h3>${esc(s.da)} → ${esc(s.a)}</h3><p class="meta">${info}</p>${body}
+    <div class="row">${a?`<button class="btn small" data-act="libera" data-id="${s.id}">Togli assegnazione</button>`:''}
+    <button class="btn small" data-act="edit" data-id="${s.id}">Modifica</button>
+    <button class="btn small danger" data-act="del-srv" data-id="${s.id}">Elimina</button></div></div></article>`;
+}
+
+/* ---------- disponibilità ---------- */
+let ioSig='';
+function renderDisp(){
+  const au=autisti();
+  if(!isAdmin())io=sess.autistaId;
+  else if(!S.autisti.has(io))io=au[0]?.id||'';
+  $('#io-box').hidden=!isAdmin();
+  const sig=au.map(a=>a.id+a.nome).join('|');
+  if(sig!==ioSig){ioSig=sig;$('#io').innerHTML=au.map(a=>`<option value="${a.id}">${esc(a.nome)}</option>`).join('')}
+  $('#io').value=io;
+  $('#io-hint').hidden=au.length>0;$('#io').hidden=!au.length;
+  const ok=S.autisti.has(io);
+  $('#aut-body').hidden=!ok;
+  if(!ok)return;
+  const nome=S.autisti.get(io).nome;
+  $('#miei-title').textContent=isAdmin()?`Prossimi servizi di ${nome}`:'I tuoi prossimi servizi';
+  $('#week').innerHTML=Array.from({length:7},(_,i)=>{const d=addD(weekStart,i),f=fasceDi(io,d),dt=parse(d);
+    return `<button data-act="pick-day" data-d="${d}" class="${f.length?'has':''} ${d===TODAY?'today':''}" aria-pressed="${d===gAut}"><span class="w">${dt.toLocaleDateString('it-IT',{weekday:'short'})}</span><span class="d">${dt.getDate()}</span><span class="s">${f.length?pad(Math.floor(f[0].da/60))+'–'+pad(Math.ceil(f[f.length-1].a/60)):''}</span></button>`}).join('');
+  $('#aut-day').textContent=longDay(gAut);
+  const f=fasceDi(io,gAut);
+  $('#fasce').innerHTML=f.length?f.map((x,i)=>`<div class="slot"><span>${hm(x.da)} – ${hm(x.a)}</span><button class="btn small" data-act="del-fascia" data-i="${i}">Togli</button></div>`).join(''):
+    `<div class="empty">Nessun orario per questo giorno. Tocca una fascia qui sotto o indica tu dalle–alle.</div>`;
+  const miei=servizi().filter(s=>s.autistaId===io&&s.data>=TODAY).sort((a,b)=>a.data.localeCompare(b.data)||a.inizio-b.inizio);
+  $('#miei').innerHTML=miei.length?miei.map(s=>`<article class="srv"><div class="srv-time"><span>${hm(s.inizio)}</span><small>${esc(shortDay(s.data))}</small></div><div class="srv-body"><h3>${esc(s.da)} → ${esc(s.a)}</h3><p class="meta">${[s.cliente,(s.pax||1)+' pax','fino alle '+fine(s),s.note].filter(Boolean).map(esc).join(' · ')}</p></div></article>`).join(''):
+    `<div class="empty">Nessun servizio assegnato per ora. Compariranno qui appena l’organizzatore ne affida uno.</div>`;
+}
+
+/* ---------- flotta ---------- */
+function renderFlotta(){
+  const au=autisti();
+  $('#flotta').innerHTML=au.length?au.map(a=>`<div class="fl"><div><b>${esc(a.nome)}</b><br><span class="muted">${esc([a.veicolo,a.posti?a.posti+' posti':''].filter(Boolean).join(' · ')||'Veicolo non indicato')}</span>${a.tel?`<br><span class="mono">${esc(a.tel)}</span>`:''}</div><div class="row"><button class="btn small" data-act="new-pin" data-id="${a.id}">Nuovo PIN</button><button class="btn small danger" data-act="del-aut" data-id="${a.id}">Rimuovi</button></div></div>`).join(''):
+    `<div class="empty"><b>La flotta è vuota.</b><br>Aggiungi il primo autista con il modulo e comunicagli il PIN: con quello entra e inserisce le sue disponibilità.</div>`;
+  if(!$('#au-pin').value)$('#au-pin').value=rndPin();
+}
+function showPin(nome,pin){
+  const n=$('#pin-note');n.hidden=false;
+  n.innerHTML=`PIN di <b>${esc(nome)}</b>: <span class="mono" style="font-size:18px;letter-spacing:.15em">${esc(pin)}</span>. Comunicalo all’autista: per sicurezza non sarà più visibile. <button class="btn small" data-act="hide-pin" style="margin-left:6px">Fatto</button>`;
+}
+
+/* ---------- viste ---------- */
+function render(){
+  if(!sess)return;
+  $('#who').innerHTML=`<b>${esc(isAdmin()?'Organizzatore':(S.autisti.get(sess.autistaId)?.nome||'Autista'))}</b>`;
+  if(isAdmin()){renderPlan();renderFlotta()}
+  renderDisp();
+}
+function setTab(t){
+  if(!isAdmin())t='disp';
+  tab=['plan','disp','flotta'].includes(t)?t:'plan';
+  for(const k of ['plan','disp','flotta'])$('#v-'+k).hidden=k!==tab;
+  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===tab));
+  ls.set('ncc-tab',tab);
+}
+function showLogin(){
+  $('#boot').hidden=true;$('#v-app').hidden=true;$('#v-login').hidden=false;renderLogin();
+}
+function renderLogin(){
+  const sel=$('#lg-chi'),cur=sel.value||ls.get('ncc-chi')||'';
+  sel.innerHTML=`<option value="">Scegli…</option><option value="__admin">Organizzatore</option>`+autisti().map(a=>`<option value="${a.id}">${esc(a.nome)}</option>`).join('');
+  sel.value=[...sel.options].some(o=>o.value===cur)?cur:'';
+  $('#lg-pin').inputMode=sel.value&&sel.value!=='__admin'?'numeric':'text';
+}
+function enter(s){
+  sess=s;
+  $('#boot').hidden=true;$('#v-login').hidden=true;$('#v-app').hidden=false;
+  $('#tabs').hidden=!isAdmin();
+  const nome=isAdmin()?'Organizzatore':(S.autisti.get(s.autistaId)?.nome||'Autista');
+  $('#who').innerHTML=`<b>${esc(nome)}</b>`;
+  setTab(isAdmin()?(ls.get('ncc-tab')||'plan'):'disp');
+  $('#srv-data').value=giorno;
+  render();
+}
+
+/* ---------- eventi ---------- */
+function resetSrv(){
+  $('#srv-id').value='';$('#srv-da').value='';$('#srv-a').value='';$('#srv-cliente').value='';$('#srv-note').value='';
+  $('#srv-data').value=giorno;$('#f-srv-title').textContent='Nuovo servizio';$('#srv-save').textContent='Aggiungi servizio';$('#srv-cancel').hidden=true;
+}
+function goDay(d){giorno=d;if(!$('#srv-id').value)$('#srv-data').value=d;renderPlan()}
+async function saveFasce(aid,data,list){
+  const m=merge(list.filter(f=>f.a>f.da));
+  if(m.length)return put('disp',aid+'_'+data,{autistaId:aid,data,fasce:m});
+  if(S.disp.has(aid+'_'+data))return del('disp',aid+'_'+data);
+  return true;
+}
+
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('[data-tab]');if(t){setTab(t.dataset.tab);return}
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const d=b.dataset;
+  switch(d.act){
+    case'logout':await api.logout();sess=null;showLogin();break;
+    case'org-day':goDay(addD(giorno,+d.n));break;
+    case'org-today':goDay(TODAY);break;
+    case'goto':goDay(d.d);break;
+    case'focus':{const el=document.getElementById('s-'+d.id);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1500)}break}
+    case'assegna':{const s=S.servizi.get(d.id);if(s)await put('servizi',d.id,{...s,autistaId:d.aid});break}
+    case'libera':{const s=S.servizi.get(d.id);if(s)await put('servizi',d.id,{...s,autistaId:''});break}
+    case'edit':{const s=S.servizi.get(d.id);if(!s)break;
+      $('#srv-id').value=d.id;$('#srv-data').value=s.data;$('#srv-ora').value=hm(s.inizio);$('#srv-durata').value=s.durata;
+      $('#srv-da').value=s.da;$('#srv-a').value=s.a;$('#srv-cliente').value=s.cliente||'';$('#srv-pax').value=s.pax||1;$('#srv-note').value=s.note||'';
+      $('#f-srv-title').textContent='Modifica servizio';$('#srv-save').textContent='Salva modifiche';$('#srv-cancel').hidden=false;
+      $('#f-srv').scrollIntoView({behavior:'smooth',block:'start'});break}
+    case'srv-reset':resetSrv();break;
+    case'del-srv':
+      if(!d.sure){b.dataset.sure=1;b.textContent='Conferma eliminazione';break}
+      await del('servizi',d.id);break;
+    case'del-aut':
+      if(!d.sure){b.dataset.sure=1;b.textContent='Conferma rimozione';break}
+      if(await del('autisti',d.id))await del('pin',d.id);break;
+    case'new-pin':{const a=S.autisti.get(d.id),p=rndPin();if(a&&await put('pin',d.id,{pin:p}))showPin(a.nome,p);break}
+    case'hide-pin':$('#pin-note').hidden=true;break;
+    case'week':weekStart=addD(weekStart,+d.n);gAut=(TODAY>=weekStart&&TODAY<addD(weekStart,7))?TODAY:weekStart;renderDisp();break;
+    case'pick-day':gAut=d.d;renderDisp();break;
+    case'preset':await saveFasce(io,gAut,[...fasceDi(io,gAut),{da:+d.da,a:+d.a}]);break;
+    case'del-fascia':{const f=[...fasceDi(io,gAut)];f.splice(+d.i,1);await saveFasce(io,gAut,f);break}
+    case'copy-week':{const f=fasceDi(io,gAut);if(!f.length){toast('Inserisci prima almeno un orario in questo giorno.');break}
+      b.disabled=true;
+      for(let i=0;i<7;i++){const x=addD(weekStart,i);if(x!==gAut&&!(await saveFasce(io,x,f)))break}
+      b.disabled=false;toast('Orari copiati su tutta la settimana.');break}
+  }
+});
+$('#org-date').addEventListener('change',e=>{if(e.target.value)goDay(e.target.value)});
+$('#io').addEventListener('change',e=>{io=e.target.value;renderDisp()});
+$('#lg-chi').addEventListener('change',e=>{$('#lg-pin').inputMode=e.target.value&&e.target.value!=='__admin'?'numeric':'text'});
+$('#f-login').addEventListener('submit',async e=>{e.preventDefault();
+  const chi=$('#lg-chi').value,pin=$('#lg-pin').value.trim();if(!chi||!pin)return;
+  const go=$('#lg-go');go.disabled=true;go.textContent='Verifica…';
+  const ruolo=chi==='__admin'?'admin':'autista',aid=ruolo==='autista'?chi:'';
+  try{await api.login(ruolo,aid,pin);ls.set('ncc-chi',chi);$('#lg-pin').value='';enter({ruolo,autistaId:aid})}
+  catch(err){toast((err&&String(err.code).includes('permission'))?'PIN non corretto. Riprova o chiedi il PIN all’organizzatore.':'Accesso non riuscito: controlla la connessione e riprova.')}
+  go.disabled=false;go.textContent='Entra';
+});
+$('#f-fascia').addEventListener('submit',async e=>{e.preventDefault();
+  const da=toMin($('#fa-da').value);let a=toMin($('#fa-a').value);if(a===0)a=1440;
+  if(a<=da){toast('L’orario di fine deve essere dopo quello di inizio. Per la notte aggiungi una fascia fino alle 24 e una dal giorno dopo.');return}
+  await saveFasce(io,gAut,[...fasceDi(io,gAut),{da,a}]);
+});
+$('#f-srv').addEventListener('submit',async e=>{e.preventDefault();
+  const id=$('#srv-id').value||newId(),old=S.servizi.get(id);
+  const s={data:$('#srv-data').value,inizio:toMin($('#srv-ora').value),durata:+$('#srv-durata').value,da:$('#srv-da').value.trim(),a:$('#srv-a').value.trim(),
+    cliente:$('#srv-cliente').value.trim(),pax:Math.max(1,+$('#srv-pax').value||1),note:$('#srv-note').value.trim(),autistaId:old?.autistaId||''};
+  if(!s.data||!s.da||!s.a)return;
+  if(await put('servizi',id,s)){giorno=s.data;resetSrv();renderPlan()}
+});
+$('#f-aut').addEventListener('submit',async e=>{e.preventDefault();
+  const nome=$('#au-nome').value.trim(),pin=$('#au-pin').value.trim();if(!nome||!/^\d{6,8}$/.test(pin))return;
+  const id=newId();
+  if(await put('autisti',id,{nome,veicolo:$('#au-veicolo').value.trim(),posti:Math.max(1,+$('#au-posti').value||4),tel:$('#au-tel').value.trim()})
+     && await put('pin',id,{pin})){
+    showPin(nome,pin);$('#au-nome').value='';$('#au-veicolo').value='';$('#au-tel').value='';$('#au-pin').value=rndPin();
+  }
+});
+
+/* ---------- dati: Firebase oppure prova ---------- */
+const cfg=window.FIREBASE_CONFIG||{};
+const DEMO=!cfg.apiKey||cfg.apiKey.startsWith('INCOLLA');
+
+function startDemo(){
+  $('#demo').hidden=false;
+  const ex=(id,nome,veicolo,posti,tel)=>S.autisti.set(id,{nome,veicolo,posti,tel});
+  ex('d1','Marco Bianchi (esempio)','Mercedes Classe V',7,'333 000 0001');
+  ex('d2','Luca Ferri (esempio)','Mercedes Classe E',3,'333 000 0002');
+  ex('d3','Sara Conti (esempio)','Volkswagen Multivan',7,'333 000 0003');
+  const D=(a,d,f)=>S.disp.set(a+'_'+d,{autistaId:a,data:d,fasce:f});
+  const T1=addD(TODAY,1);
+  D('d1',TODAY,[{da:360,a:840}]);D('d2',TODAY,[{da:480,a:1200}]);D('d3',TODAY,[{da:840,a:1440}]);
+  D('d1',T1,[{da:360,a:780}]);D('d3',T1,[{da:0,a:1440}]);
+  const V=(id,o)=>S.servizi.set(id,o);
+  V('s1',{data:TODAY,inizio:450,durata:60,da:'Aeroporto Marconi',a:'Hotel Bologna centro',cliente:'Cliente esempio',pax:2,note:'Volo AZ1302',autistaId:'d1'});
+  V('s2',{data:TODAY,inizio:600,durata:90,da:'BolognaFiere',a:'Autodromo di Imola',cliente:'Azienda esempio',pax:5,note:'',autistaId:''});
+  V('s3',{data:TODAY,inizio:960,durata:60,da:'Stazione Centrale',a:'Aeroporto Marconi',cliente:'',pax:3,note:'2 valigie grandi',autistaId:''});
+  V('s4',{data:T1,inizio:480,durata:240,da:'Bologna',a:'Firenze, giro clienti',cliente:'Azienda esempio',pax:4,note:'',autistaId:''});
+  api={
+    put:async(c,id,d)=>{if(c!=='pin'){S[c].set(id,d);render()}},
+    del:async(c,id)=>{if(c!=='pin'){S[c].delete(id);render()}},
+    login:async()=>{},
+    logout:async()=>{}
+  };
+  showLogin();
+  const n=document.createElement('p');n.className='notice';n.innerHTML='<b>Modalità prova:</b> scegli Organizzatore o un autista di esempio e scrivi un PIN qualsiasi.';
+  $('#f-login').prepend(n);
+}
+
+async function startFirebase(){
+  const V='10.12.2',B=`https://www.gstatic.com/firebasejs/${V}/`;
+  const [{initializeApp},{getAuth,signInAnonymously,onAuthStateChanged},fs]=await Promise.all([
+    import(B+'firebase-app.js'),import(B+'firebase-auth.js'),import(B+'firebase-firestore.js')]);
+  const {initializeFirestore,persistentLocalCache,doc,collection,setDoc,deleteDoc,getDoc,onSnapshot}=fs;
+  const app=initializeApp(cfg),auth=getAuth(app);
+  let fdb;try{fdb=initializeFirestore(app,{localCache:persistentLocalCache()})}catch(e){fdb=fs.getFirestore(app)}
+  let uid=null;const subs={};
+  const listen=c=>{if(subs[c])return;subs[c]=onSnapshot(collection(fdb,c),q=>{S[c]=new Map(q.docs.map(d=>[d.id,d.data()]));if(sess)render();else if(c==='autisti')renderLogin()},
+    err=>{subs[c]=null;if(sess)toast('Collegamento ai dati interrotto. Ricarica la pagina.')})};
+  const stopSession=()=>{for(const c of ['servizi','disp'])if(subs[c]){subs[c]();subs[c]=null}S.servizi.clear();S.disp.clear()};
+  api={
+    put:(c,id,d)=>setDoc(doc(fdb,c,id),d),
+    del:(c,id)=>deleteDoc(doc(fdb,c,id)),
+    login:async(ruolo,autistaId,pin)=>{await setDoc(doc(fdb,'sessioni',uid),{ruolo,autistaId,pin:String(pin)});listen('servizi');listen('disp')},
+    logout:async()=>{stopSession();try{await deleteDoc(doc(fdb,'sessioni',uid))}catch(e){}}
+  };
+  onAuthStateChanged(auth,async u=>{
+    if(!u){try{await signInAnonymously(auth)}catch(e){$('#boot').innerHTML='Accesso a Firebase non riuscito. Controlla che in Authentication sia attivo il metodo <b>Anonimo</b> e che questo sito sia tra i domini autorizzati.'}return}
+    uid=u.uid;listen('autisti');
+    try{const s=await getDoc(doc(fdb,'sessioni',uid));if(s.exists()){const v=s.data();listen('servizi');listen('disp');enter({ruolo:v.ruolo,autistaId:v.autistaId||''});return}}catch(e){}
+    showLogin();
+  });
+}
+
+if(DEMO)startDemo();
+else startFirebase().catch(()=>{$('#boot').textContent='Impossibile caricare Firebase. Controlla la connessione e ricarica la pagina.'});
+</script>
+</body>
+</html>
